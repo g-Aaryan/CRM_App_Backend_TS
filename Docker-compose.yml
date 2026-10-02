@@ -1,0 +1,55 @@
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: crm-mongo
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo_data:/data/db
+
+    networks:
+      - crm-network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: crm-backend
+
+    ports:
+      - "5000:5000"
+
+    env_file:
+      - .env
+
+    networks:
+      - crm-network
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+
+volumes:
+  mongo_data:
+
+
+networks:
+  crm-network:
+    driver: bridge
